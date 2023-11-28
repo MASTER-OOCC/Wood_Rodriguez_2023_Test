@@ -1,0 +1,345 @@
+! Ansys Mechanical Enterprise Academic Student 2021 R2
+! Script tensile test according ASTM D-143 - Longitudinal Direction
+! Geometry - Solution - EKILL
+/CLEAR,
+FINISH,
+! Auxiliary data for geometry for materil 
+! Elastic constants - Units in Mega Pascal (MPa)
+E_L   = 6430  ! Young’s moduli - Longitudinal Direction 
+E_T   = 230   ! Young’s moduli - Tangential Direction 
+E_R   = 700   ! Young’s moduli - Radial Direction 
+!
+G_LR  = 1230  ! Shear moduli - Longitudinal/Radial
+G_LT  = 888   ! Shear moduli - Longitudinal/Tangential 
+G_RT  = 114   ! Shear moduli - Radial/Tangential      
+!
+NU_LR = 0.048 ! Poisson’s ratios - Longitudinal/Radial
+NU_LT = 0.446 ! Poisson’s ratios - Longitudinal/Tangential 
+NU_RT = 0.430 ! Poisson’s ratios - Radial/Tangential       
+!
+! PREPROCESSOR
+/PREP7
+
+! Element type
+ET, 1, 186
+
+! Material props / Material model
+! Young’s moduli
+MP, EX, 1, E_R 
+MP, EY, 1, E_L
+MP, EZ, 1, E_T 
+! Shear moduli
+MP, PRXY, 1, NU_LR
+MP, PRYZ, 1, NU_LT
+MP, PRXZ, 1, NU_RT
+! Poisson’s ratios
+MP, GXY, 1, G_LR 
+MP, GYZ, 1, G_LT 
+MP, GXZ, 1, G_RT 
+
+! Geometry
+! Auxiliary data for geometry
+tol  = 1e-6       ! Auxiliary tolerance value
+pulg = 25.4       ! Inch value in millimeters (mm)
+Lt   = 18*pulg    ! Total length of specimen in Inch
+!
+BLOCK, 0, pulg, 0,4*pulg, 0, pulg
+BLOCK, 0, pulg, 4*pulg, 14*pulg, 1/4*pulg, 3/4*pulg
+BLOCK, 0, pulg, 14*pulg, 18*pulg, 0, pulg
+
+WPOFFS, 1/2*pulg, 9*pulg
+WPOFFS, -3/16*pulg
+
+WPOFFS,-17.5*pulg
+CYL4,0,0,17.5*pulg,0,,,1*pulg
+
+WPOFFS,(3/8+35)*pulg
+CYL4,0,0,17.5*pulg,0,,,1*pulg
+
+VSBV,2,4
+VSBV,6,5
+ALLSEL
+!
+! Configuration of the specimen for meshing, generating cuts for meshing
+NUMCMP,ALL
+WPSTYL,DEFA
+
+WPOFFS,,9*pulg,1/2*pulg
+WPROTA,,,90
+
+WPOFFS,-3/32*pulg
+WPOFFS,-17.5*pulg
+CYL4,0,0,17.5*pulg,0,,,1*pulg
+
+WPOFFS,(3/16+35)*pulg
+CYL4,0,0,17.5*pulg,0,,,1*pulg
+
+VSBV,2,4
+VSBV,6,5
+
+NUMCMP,ALL
+WPSTYL,DEFA
+
+WPOFFS,1/4*pulg,,1/4*pulg
+VSBW,ALL
+
+WPOFFS,1/4*pulg,,1/4*pulg
+VSBW,ALL
+
+WPOFFS,1/4*pulg,,1/4*pulg
+VSBW,ALL
+
+WPOFFS,-1/4*pulg,,-1/4*pulg
+WPROTA,,,90
+VSBW,ALL
+
+ALLSEL
+BTOL,1/10
+ALLSEL
+VGLUE,ALL
+
+WPOFFS,,144.9732,
+WPROTA,,-90,
+VSBW,ALL
+
+WPOFFS,,,24.3607,
+VSBW,ALL
+
+WPOFFS,,,59.2661,
+VSBW,ALL
+
+
+WPOFFS,,,59.2661,
+VSBW,ALL
+
+WPOFFS,,,24.3607,
+VSBW,ALL
+
+NUMCMP,ALL
+WPSTYL,DEFA
+!!
+
+! Point coincidence tolerance
+
+ALLSEL
+BTOL,1/10 
+
+!volumes to be glued
+
+ALLSEL
+VGLUE,ALL
+
+! Meshing
+
+VATT,1,,1
+MSHAPE,0,3D     ! Mesh Type, Quadrilateral ,3 Dimensions
+MSHKEY,1        ! Using the Mapped Meshing
+
+LSEL,S,LENGTH,,2.381
+LESIZE,ALL,,,5
+ALLSEL,ALL
+
+VSEL,S,LOC,Y,7.75*pulg,10.25*pulg
+ESIZE,0.05*pulg !0.08
+VMESH,ALL
+ALLSEL,ALL
+
+VSEL,S,LOC,Y,4.0*pulg,7.75*pulg
+VSEL,A,LOC,Y,10.25*pulg,14*pulg
+ESIZE,0.2*pulg
+VMESH,ALL
+ALLSEL,ALL
+
+VSEL,S,LOC,Y,0.0,4.0*pulg
+VSEL,A,LOC,Y,14*pulg,18*pulg
+ESIZE,0.5*pulg
+VMESH,ALL
+ALLSEL,ALL
+
+!!
+! Constrain definition
+*GET,nNodes,NODE,0,COUNT
+*GET,nElem,ELEM,0,COUNT
+
+NSEL,S,LOC,Y,0.0
+D,ALL,UX,0.0
+D,ALL,UY,0.0
+!D,ALL,UZ,0.0
+ALLSEL,ALL
+
+NSEL,S,NODE,,81690
+D,81690,ALL,0.0
+
+NSEL,S,LOC,Y,Lt
+CP,1,UY,ALL
+*GET,NodeBlock,NODE,0,NUM,MIN
+ALLSEL,ALL
+
+Displacement = 1.058
+
+*dim,val,table,1,6,,,TIME
+*taxis,val(1),2,0,0.05,1.0
+val(1,1) = Displacement*0.001
+val(1,2) = Displacement*0.99
+val(1,3) = Displacement*1.0
+
+D,NodeBlock,UY,%val%
+
+! Solution
+dTime = 0.1
+Paso = 1
+/SOLU
+ANTYPE,STATIC
+NLGEOM,ON
+NROPT,FULL
+OUTRES,ALL,ALL
+NSUBST,Paso,Paso,Paso
+TIME,dTime
+RESCONTROL,,ALL,1
+SOLVE,
+nIter = 1/dTime-1
+!!
+
+!-------------------------------------------------------------------
+            !POSTPROCESSOR - Failure Criteria!
+!-------------------------------------------------------------------
+! Auxiliary data for failure criteria 
+
+!!
+F1t = 62.999   ! Tensile strength - Longitudinal
+F2t = 6.1499   ! Tensile strength - Tangencial
+F3t = 2.4199   ! Tensile strength - Radial
+!!
+
+! Compressive strengths 
+
+F1c = -33.604 ! Compressive strength - Longitudinal
+F2c = -5.0357  ! Compressive strength - Tangencial
+F3c = -3.5717  ! Compressive strength - Radial
+!!
+
+!Shear strength
+
+F4s = 13.858  ! Shear strength radial       - YZ
+F5s = 11.993  ! Shear strength longitudinal - XZ
+F6s = 14.419 ! Shear strength tangencial   - XY
+
+/POST1
+
+RSYS,SOLU ! Activate the ESYS
+
+!Stress in tensile   
+FC,1,S,XTEN,F2t  
+FC,1,S,YTEN,F1t
+FC,1,S,ZTEN,F3t
+!Stress in Compresion  
+FC,1,S,XCMP,F2c   
+FC,1,S,YCMP,F1c 
+FC,1,S,ZCMP,F3c
+!Stress in shear
+FC,1,S,XY,F6s 
+FC,1,S,YZ,F4s
+FC,1,S,XZ,F5s
+!
+FC,1,S,XYCP,-1 ! c6 coefficient. Defaults to -1.0
+FC,1,S,YZCP,-1 ! c4 coefficient. Defaults to -1.0
+FC,1,S,XZCP,-1 ! c5 coefficient. Defaults to -1.0
+
+ALLSEL,ALL
+PRNSOL,S,FAIL       ! Print table with FAIL index, where:
+PRESOL,FAIL
+PLESOL,FAIL,TWSR    ! Print table with FAIL index, where:
+PLESOL,FCMX,FC,TWSR ! Print table with FAIL index, where:
+
+ALLSEL,ALL
+!!
+
+!-------------------------------------------------------------------
+            !POSTPROCESSOR - EKILL_LOOP!
+!-------------------------------------------------------------------
+
+/POST1
+
+SET,LAST
+ETABLE,check,FAIL,TWSR
+ESEL,S,ETAB,check,1
+
+CM,Kill_Loop,ELEM
+*GET,Ekill_C,ELEM,0,COUNT
+
+*IF,Ekill_C,GT,0,THEN
+    CMWRITE,Kill_Loop,cm
+*ENDIF
+
+ALLSEL,ALL
+FINISH,
+
+*DO,k,2,niter+1,
+    /SOLU
+    PARSAV,ALL,prepar
+    ANTYPE,,RESTART
+    PARRES,,prepar
+    TIME,k*dTime
+
+    *iF,Ekill_C,GT,0,THEN
+        /INPUT,Kill_Loop,cm
+        CMSEL,S,Kill_Loop,ELEM
+        EKILL,ALL
+    *ENDIF
+    ALLSEL,ALL
+    SOLVE,
+    FINISH,
+
+    /POST1
+
+    RSYS,SOLU ! Activate the ESYS
+
+    !Stress in tensile
+    FC,1,S,XTEN,F2t  
+    FC,1,S,YTEN,F1t
+    FC,1,S,ZTEN,F3t
+    !Stress in Compresion
+    FC,1,S,XCMP,F2c   
+    FC,1,S,YCMP,F1c 
+    FC,1,S,ZCMP,F3c
+    !Stress in shear
+    FC,1,S,XY,F6s 
+    FC,1,S,YZ,F4s
+    FC,1,S,XZ,F5s
+    !
+    FC,1,S,XYCP,-1 ! c6 coefficient. Defaults to -1.0
+    FC,1,S,YZCP,-1 ! c4 coefficient. Defaults to -1.0
+    FC,1,S,XZCP,-1 ! c5 coefficient. Defaults to -1.0
+
+    SET,LAST
+    ETABLE,check,FAIL,TWSR
+    ESEL,S,ETAB,check,1.0
+
+    *iF,Ekill_C,GT,0,THEN
+        CMSEL,A,Kill_Loop,ELEM
+    *ENDIF
+    CM,Kill_Loop,ELEM
+    *GET,Ekill_C,ELEM,0,COUNT
+    *IF,Ekill_C,GT,0,THEN
+        CMWRITE,Kill_Loop,cm
+    *ENDIF
+    ALLSEL,ALL
+    FINISH,
+*ENDDO
+FINISH,
+
+!-------------------------------------------------------------------
+            !POST26 and Results!
+!-------------------------------------------------------------------
+/POST26
+ESOL,2,6581,131,S,EQV,Sigma_eqv
+ESOL,3,6581,131,EPEL,EQV,Epsilon_eqv
+LINES,1000
+PRVAR,2,3 ! list displacements and reactions
+
+VGET,S_EQV,2,0
+VGET,E_EQUV,3,0
+
+*VSCFUN,Smax,MAX,S_EQV
+*VSCFUN,Emax,MAX,E_EQUV
+

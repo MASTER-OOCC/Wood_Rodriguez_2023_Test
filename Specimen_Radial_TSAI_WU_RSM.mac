@@ -1,0 +1,408 @@
+
+! Ansys Mechanical Enterprise Academic Student 2021 R2
+! Script tensile test according ASTM D-143 - Radial Direction
+! Geometry - Solution - EKILL
+
+    /CLEAR,
+    FINISH,
+
+! Auxiliary data for geometry for materil 
+
+    ! Elastic constants - Units in Mega Pascal (MPa)
+
+    E_L   = 6430  !Young’s moduli - Longitudinal Direction 
+    E_T   = 230   !Young’s moduli - Tangential Direction 
+    E_R   = 700   !Young’s moduli - Radial Direction 
+!!
+    G_LR  = 1230  !Shear moduli - Longitudinal/Radial
+    G_LT  = 888   !Shear moduli - Longitudinal/Tangential 
+    G_RT  = 114   !Shear moduli - Radial/Tangential  
+
+    NU_LR = 0.048 ! Poisson’s ratios - Longitudinal/Radial
+    NU_LT = 0.446 ! Poisson’s ratios - Longitudinal/Tangential 
+    NU_RT = 0.430 ! Poisson’s ratios - Radial/Tangential     
+!!
+    !NU_LR = 0.048 !Poisson’s ratios - Longitudinal/Radial
+    !NU_LT = 0.446 !Poisson’s ratios - Longitudinal/Tangential 
+    !NU_RT = 0.276 !Poisson’s ratios - Radial/Tangential       
+!!
+
+!-------------------------------------------------------------------
+                          !PREPROCESSOR!
+!-------------------------------------------------------------------
+
+    /PREP7
+
+!Element type
+
+    ET,1,186
+
+!Material props / Material model
+
+    !Young’s moduli
+    MP,EX,1,E_L 
+    MP,EY,1,E_R
+    MP,EZ,1,E_T 
+!!
+    !Shear moduli
+    MP,PRXY,1,NU_LR
+    MP,PRYZ,1,NU_RT
+    MP,PRXZ,1,NU_LT
+!!
+    !Poisson’s ratios
+    MP,GXY,1,G_LR 
+    MP,GYZ,1,G_RT 
+    MP,GXZ,1,G_LT
+!!
+
+! Geometry
+
+    ! Auxiliary data for geometry
+
+    tol  = 1e-6       ! Auxiliary tolerance value
+    pulg = 25.4       ! Inch value in millimeters (mm)
+    lt   =70          ! Total width of specimen in millimeters (mm)
+    lth  =2*pulg      ! Total length of specimen
+
+
+ 
+    BLOCK,0,lt,0,2*pulg,0,2*pulg
+    WPOFFS,lt/2,pulg
+    WPOFFS,-pulg,
+    CYL4,0,0,1/2*pulg,0,,,2*pulg
+    WPOFFS,2*pulg,
+    CYL4,0,0,1/2*pulg,0,,,2*pulg
+    VSBV,1,2
+    VSBV,4,3
+!!
+
+! Configuration of the specimen for meshing, generating cuts for meshing
+
+    NUMCMP,ALL
+    WPSTYL,DEFA
+
+    WPOFFS,lt/2,,pulg
+    VSBW,ALL
+
+    WPROTA,,,90
+    WPOFFS,,,pulg
+    VSBW,ALL
+
+    WPOFFS,,,-2*pulg
+    VSBW,ALL
+
+    wpoffs,,pulg,
+    wprota,,-90,
+    VSBW,ALL
+
+    WPOFFS,,,3/4*pulg
+    VSBW,ALL
+
+    WPOFFS,,,-1.5* pulg
+    VSBW,ALL
+
+    NUMCMP,ALL
+    WPSTYL,DEFA
+
+    WPOFFS,27.5,,
+    WPROTA,,,90
+    VSBW,ALL
+
+    WPOFFS,,,15
+    VSBW,ALL
+
+    VSEL,S,LOC,y,1/4*pulg,1.75*pulg
+    WPOFFS,,1/4*pulg,
+    WPROTA,,45,
+    VSBW,ALL
+
+    WPROTA,,-45,
+    WPOFFS,,1.5*pulg,
+    WPROTA,,135,
+    VSBW,ALL
+
+    WPROTA,,-135,
+    WPOFFS,,,-15
+    WPROTA,,45,
+    VSBW,ALL
+
+    WPROTA,,-45
+    WPOFFS,,-1.5*pulg,
+    WPROTA,,-45,
+    VSBW,ALL
+
+    NUMCMP,ALL
+    WPSTYL,DEFA
+    VSEL,S,LOC,y,1/4*pulg,3/4*pulg
+    WPOFFS,,1/4*pulg,
+    WPROTA,,90,
+    WPROTA,,,45
+    VSBW,ALL
+
+    WPROTA,,,-45
+    WPOFFS,70,,
+    WPROTA,,,-45
+    VSBW,ALL
+
+    WPROTA,,,-45
+    VSEL,S,LOC,y,3/4*pulg,1.75*pulg
+    WPOFFS,-1.5* pulg,,
+    WPROTA,,,-45
+    VSBW,ALL
+
+    WPROTA,,,45
+    WPOFFS,,,70
+    WPROTA,,,45
+    VSBW,ALL
+
+    NUMCMP,ALL
+    WPSTYL,DEFA
+    VSEL,ALL
+!!
+
+! Point coincidence tolerance
+
+    ALLSEL
+    !BTOL,1/10 
+
+!volumes to be glued
+
+    ALLSEL
+    VGLUE,ALL
+
+! Meshing
+
+    MSHAPE,0,3D                   ! Mesh Type, Quadrilateral ,3 Dimensions
+    MSHKEY,1                      ! Using the Mapped Meshing
+    ESIZE,0.2*pulg,,              
+    ALLSEL
+    
+    VSEL,S,LOC,y,0,1/4*pulg
+    VSEL,A,LOC,y,1.75*pulg,2*pulg
+    VMESH,ALL                     
+
+    VSEL,S,LOC,y,1/4*pulg,1.75*pulg
+    VMESH,ALL   
+    NUMCMP,ALL
+    WPSTYL,DEFA
+!!
+! Constrain definition
+
+    NSEL,S,LOC,Y,0.0
+    D,ALL,ALL,0.0
+    ALLSEL,ALL
+
+    NSEL,S,LOC,Y,lth
+    CP,1,UY,ALL
+    *GET,NodeBlock,NODE,0,NUM,MIN
+    ALLSEL,ALL
+
+    Displacement = 0.35
+
+    *dim,val,table,1,6,,,TIME
+    *taxis,val(1),2,0,0.01,1.0
+    val(1,1) = Displacement*0.0
+    val(1,2) = Displacement*0.01
+    val(1,3) = Displacement*1.0
+
+    D,NodeBlock,UY,%val%
+
+! Solution
+
+    dTime = 0.05
+    Paso = 1
+    /SOLU
+    ANTYPE,STATIC
+    NLGEOM,ON
+    NROPT,FULL
+    OUTRES,ALL,ALL
+    NSUBST,Paso,Paso,Paso
+    TIME,dTime
+    RESCONTROL,,ALL,1
+    SOLVE,
+    nIter = 1/dTime-1
+!!
+
+!-------------------------------------------------------------------
+                          !POSTPROCESSOR - Failure Criteria!
+!-------------------------------------------------------------------
+! Auxiliary data for failure criteria 
+
+    ! Tensile strength
+
+    F1t = 62.999   ! Tensile strength - Longitudinal
+    F2t = 6.1499   ! Tensile strength - Tangencial
+    F3t = 2.4199   ! Tensile strength - Radial
+    !!
+
+    ! Compressive strengths 
+
+    F1c = -33.604 ! Compressive strength - Longitudinal
+    F2c = -5.0357  ! Compressive strength - Tangencial
+    F3c = -3.5717  ! Compressive strength - Radial
+    !!
+
+    !Shear strength
+
+    F4s = 13.858  ! Shear strength radial       - YZ
+    F5s = 11.993  ! Shear strength longitudinal - XZ
+    F6s = 14.419 ! Shear strength tangencial   - XY
+    !!
+
+    /POST1
+
+    RSYS,SOLU ! Activate the ESYS
+
+    !Stress in tensile   
+
+        FC,1,S,XTEN,F1t  
+        FC,1,S,YTEN,F2t
+        FC,1,S,ZTEN,F3t
+
+    !Stress in Compresion  
+
+        FC,1,S,XCMP,F1c   
+        FC,1,S,YCMP,F2c 
+        FC,1,S,ZCMP,F3c
+
+    !Stress in shear
+
+        FC,1,S,XY,F4s 
+        FC,1,S,YZ,F6s
+        FC,1,S,XZ,F5s
+
+        FC,1,S,XYCP,-1 ! c6 coefficient. Defaults to -1.0
+        FC,1,S,YZCP,-1 ! c4 coefficient. Defaults to -1.0
+        FC,1,S,XZCP,-1 ! c5 coefficient. Defaults to -1.0
+
+    ALLSEL,ALL
+    PRNSOL,S,FAIL       ! Print table with FAIL index, where:
+    PRESOL,FAIL
+    PLESOL,FAIL,TWSR    ! Print table with FAIL index, where:
+    PLESOL,FCMX,FC,TWSR ! Print table with FAIL index, where:
+
+    ALLSEL,ALL
+!!
+
+!-------------------------------------------------------------------
+                          !POSTPROCESSOR - EKILL_LOOP!
+!-------------------------------------------------------------------
+
+    /POST1
+
+    SET,LAST
+    ETABLE,check,FAIL,TWSR
+    ESEL,S,ETAB,check,1
+
+    CM,Kill_Loop,ELEM
+    *GET,Ekill_C,ELEM,0,COUNT
+
+    *IF,Ekill_C,GT,0,THEN
+        CMWRITE,Kill_Loop,cm
+    *ENDIF
+
+    ALLSEL,ALL
+    FINISH,
+
+    *DO,k,2,nIter,
+
+        /SOLU
+        PARSAV,ALL,prepar
+        ANTYPE,,RESTART
+        PARRES,,prepar
+        TIME,k*dTime
+
+        *iF,Ekill_C,GT,0,THEN
+            /INPUT,Kill_Loop,cm
+            CMSEL,S,Kill_Loop,ELEM
+            EKILL,ALL
+        *ENDIF
+        ALLSEL,ALL
+        SOLVE,
+        FINISH,
+        
+        /POST1
+
+        RSYS,SOLU ! Activate the ESYS
+
+        !Stress in tensile   
+
+        FC,1,S,XTEN,F1t  
+        FC,1,S,YTEN,F2t
+        FC,1,S,ZTEN,F3t
+
+    !Stress in Compresion  
+
+        FC,1,S,XCMP,F1c   
+        FC,1,S,YCMP,F2c 
+        FC,1,S,ZCMP,F3c
+
+    !Stress in shear
+
+        FC,1,S,XY,F4s 
+        FC,1,S,YZ,F6s
+        FC,1,S,XZ,F5s
+
+        FC,1,S,XYCP,-1 ! c6 coefficient. Defaults to -1.0
+        FC,1,S,YZCP,-1 ! c4 coefficient. Defaults to -1.0
+        FC,1,S,XZCP,-1 ! c5 coefficient. Defaults to -1.0
+
+        SET,LAST
+        ETABLE,check,FAIL,TWSR
+        ESEL,S,ETAB,check,1
+
+
+        *iF,Ekill_C,GT,0,THEN
+        CMSEL,A,Kill_Loop,ELEM
+        *ENDIF
+        CM,Kill_Loop,ELEM
+        *GET,Ekill_C,ELEM,0,COUNT
+        *IF,Ekill_C,GT,0,THEN
+            CMWRITE,Kill_Loop,cm
+        *ENDIF
+        ALLSEL,ALL
+        FINISH,
+    
+    *ENDDO
+    FINISH,
+
+
+!-------------------------------------------------------------------
+                          !POST26 and Results!
+!-------------------------------------------------------------------
+
+!todavia no desarrollo esta parte
+
+
+/POST26 
+NUMVAR,200  
+SOLU,191,NCMIT  
+STORE,MERGE 
+FILLDATA,191,,,,1,1 
+REALVAR,191,191 
+FORCE,TOTAL 
+!*  
+!*  
+ESOL,2,3077,14757 ,EPEL,Y,EPELY_2   
+STORE,MERGE 
+FORCE,TOTAL 
+!*  
+!*  
+ESOL,4,3077,14757 ,S,Y,SY_4 
+STORE,MERGE 
+!*  
+NSOL,5,388,U,Y, UY_5,   
+STORE,MERGE 
+!*  
+RFORCE,6,388,F,Y, FY_6  
+STORE,MERGE 
+!*  
+RFORCE,7,388,F,Y, FY_7  
+STORE,MERGE 
+VARDEL,7
+XVAR,5  
+PLVAR,5,6,  
+)/GOP    ! Resume printing after UNDO process   
+)! We suggest a save at this point  
+
+
